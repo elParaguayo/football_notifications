@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+"""Live Football Scores Notification Service
+
+by elParaguayo
+
+This script is (currently) designed to work in connjunction with AutoRemote
+and Tasker on an Android phone.
+
+The script checks football scores and sends updates to the phone where they
+can be handled by the user as they see fit (e.g. notifications for goals).
+
+An Issues/To Do list will be maintained separately on GitHub at this address:
+https://github.com/elParaguayo/live_scores_service/issues
+
+Any errors can be discussed on the Raspberry Pi forum at this address:
+[TBC]
+
+Version: 0.1
+"""
+
+from service.scoresservice import ScoreNotifierService
+from notifiers.notifier_autoremote import AutoRemoteNotifier
+from notifiers.notifier_email import EmailNotifier
+
+##############################################################################
+# USER SETTINGS - CHANGE AS APPROPRIATE                                      #
+##############################################################################
+
+# myTeam: Name of the team for which you want to receive updates.
+# NB the team name needs to match the name used by the BBC
+myTeam = "Chelsea"
+
+# LIVE_UPDATE_TIME: Time in seconds until data refreshes while match is live
+# NON_LIVE_UPDATE_TIME: Time in seconds until data refreshes after match or
+#                       when there is no match on the day
+# NB. Once a match is found, the script will try to sleep until 5 minutes
+# before kick-off
+LIVE_UPDATE_TIME = 30
+NON_LIVE_UPDATE_TIME = 60 * 60
+
+# DETAILED - Request additional information on match (e.g. goalscorers)
+# Should be updated to reflect the needs of the specific notifier
+DETAILED = True
+
+# DEBUG: Setting to True will output debug information. Should be kept as False
+#        unless there's a very good reason to change
+DEBUG = True
+
+##############################################################################
+# NOTIFIERS - You should only initialise one notifier and comment out the    #
+# other. Future versions may allow for multiple notifiers                    #
+##############################################################################
+
+# E-MAIL #####################################################################
+
+# FROMADDR - string representing sender
+FROMADDR = 'Football Score Service'
+# TOADDR - list of recipients
+TOADDR = ['foo@bar.com']
+# USER - username for mail account
+USER = 'foobar@gmail.com'
+# PWD - password
+PWD = 'password'
+# SERVER - address of mail server
+SERVER = 'smtp.gmail.com'
+# PORT - mail server port number
+PORT = 587
+# TITLE - optional prefix for email subject line
+TITLE = ""
+
+notifier = EmailNotifier(SERVER, PORT, USER, PWD, FROMADDR, TOADDR, TITLE)
+
+# AUTOREMOTE #################################################################
+
+# myAutoRemoteKey - long string key used in web requests for AutoRemote
+myAutoRemoteKey = ""
+
+# prefix - single word used by AutoRemote/Tasker to identify notifications
+prefix = "scores"
+
+# notifier = AutoRemoteNotifier(myAutoRemoteKey, prefix)
+
+##############################################################################
+# DO NOT CHANGE ANYTHING BELOW THIS LINE                                     #
+##############################################################################
+
+if __name__ == "__main__":
+    service = ScoreNotifierService(myTeam,
+                                   notifier=notifier,
+                                   livetime=LIVE_UPDATE_TIME,
+                                   nonlivetime=NON_LIVE_UPDATE_TIME,
+                                   debug=DEBUG,
+                                   detailed=DETAILED)
+    service.run()
