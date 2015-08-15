@@ -1,4 +1,4 @@
-"""Notifier object for sending alerts to Tasker via AutoRemote.
+"""Notifier object for sending alerts via email.
 
 The object is designed to be used with the football_notify_service.py script.
 As such, it implements a "Notify method"

@@ -50,7 +50,9 @@ class matchcommon(object):
         #     return codecs.decode(page, "utf-8") if page else None
         try:
             r = requests.get(url, timeout=2)
-        except requests.Timeout:
+        # requests timeout doesn'r catch socket.timeout so we need to catch
+        # both explicitly
+        except (socket.timeout, requests.Timeout):
             return None
 
         if r.status_code == 200:
@@ -1052,6 +1054,26 @@ class League(matchcommon):
     @property
     def LeagueID(self):
         return self.__leagueid
+
+    @property
+    def Goal(self):
+        return any((m.Goal for m in self.__leaguematches))
+
+    @property
+    def StatusChanged(self):
+        return any((m.StatusChanged for m in self.__leaguematches))
+
+    @property
+    def HasFinished(self):
+        return all((m.HasFinished for m in self.__leaguematches))
+
+    @property
+    def HasStarted(self):
+        return any((m.HasStarted for m in self.__leaguematches))
+
+    @property
+    def IsLive(self):
+        return any((m.HasStarted for m in self.__leaguematches))
 
 
 class LeagueTable(matchcommon):
