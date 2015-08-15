@@ -10,7 +10,7 @@ An Issues/To Do list will be maintained separately on GitHub at this address:
 https://github.com/elParaguayo/live_scores_service/issues
 
 Any errors can be discussed on the Raspberry Pi forum at this address:
-[TBC]
+https://www.raspberrypi.org/forums/viewtopic.php?f=41&t=118203
 
 Version: 0.1
 """
