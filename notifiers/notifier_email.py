@@ -11,6 +11,12 @@ from email.mime.text import MIMEText
 
 import service.constants as CONST
 
+PRE_NEW_MATHCH = "New match found."
+PRE_KICK_OFF = "KICK-OFF!"
+PRE_HALF_TIME = "HALF TIME!"
+PRE_FULL_TIME = "FULL TIME!"
+PRE_TEAM_GOAL = "GOOOOOOAAAAALLL!!!"
+PRE_OPPOSITION_GOAL = "Uh oh..."
 
 MATCH_TEMPLATE = (
   u"""<body><html>
@@ -108,22 +114,22 @@ class EmailNotifier(object):
                  "{awayteam}".format(**matchobject.matchdict))
 
         if event == CONST.STATUS_MATCH_FOUND:
-            prefix = "New match found."
+            prefix = PRE_NEW_MATHCH
 
         elif event == CONST.STATUS_KICK_OFF:
-            prefix = "KICK-OFF!"
+            prefix = PRE_KICK_OFF
 
         elif event == CONST.STATUS_HALF_TIME:
-            prefix = "HALF TIME!"
+            prefix = PRE_HALF_TIME
 
         elif event == CONST.STATUS_FULL_TIME:
-            prefix = "FULL TIME!"
+            prefix = PRE_FULL_TIME
 
         elif event == CONST.GOAL_MYTEAM:
-            prefix = "GOOOOOOAAAAALLL!!!"
+            prefix = PRE_TEAM_GOAL
 
         elif event == CONST.GOAL_OPPOSITION:
-            prefix = "Uh oh..."
+            prefix = PRE_OPPOSITION_GOAL
 
         return u"{title}{prefix} {score}".format(title=self.__title,
                                                  prefix=prefix,
@@ -150,7 +156,7 @@ class EmailNotifier(object):
             self.__server.quit()
             return success
 
-    def Notify(self, event, matchobject):
+    def Notify(self, event, matchobject, *kwargs):
         """Method to send message via email.
 
         Returns True if message sent successfully.

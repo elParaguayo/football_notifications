@@ -28,7 +28,7 @@ class TemplateNotifier(object):
         """
         pass
 
-    def Notify(self, event, matchobject):
+    def Notify(self, event, matchobject, **kwargs):
         """This is the method that will be called by the service when an
         event is triggered. As such the name and parameters cannot be changed.
 
@@ -36,6 +36,7 @@ class TemplateNotifier(object):
         matchobject: FootballMatch object. There is a lot of information
                      available. Have a look at the service.footballscores.py
                      source for details.
+        kwargs:      Other keyword arguments (for future compatibility)
 
         Should return True if event notification was successful.
         """

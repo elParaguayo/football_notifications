@@ -39,7 +39,7 @@ class AutoRemoteNotifier(object):
                                     event,
                                     unicode(matchobject))
 
-    def Notify(self, event, matchobject):
+    def Notify(self, event, matchobject, **kwargs):
         """Method to send message via Autoremote.
 
         Converts the match object into a string for sending to AutoRemote.
