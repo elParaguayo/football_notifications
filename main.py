@@ -7,7 +7,7 @@ The script checks football scores and sends updates to a notifier which
 can be handled by the user as they see fit (e.g. notifications for goals).
 
 An Issues/To Do list will be maintained separately on GitHub at this address:
-https://github.com/elParaguayo/live_scores_service/issues
+https://github.com/elParaguayo/football_notifications/issues
 
 Any errors can be discussed on the Raspberry Pi forum at this address:
 https://www.raspberrypi.org/forums/viewtopic.php?f=41&t=118203
