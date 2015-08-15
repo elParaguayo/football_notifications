@@ -34,7 +34,7 @@ class ScoreNotifierService(object):
     updates.
     """
 
-    def __init__(self, team, notifier=None, detailed=False, debug=False,
+    def __init__(self, team, notifier=None, detailed=False, logger=None,
                  livetime=60, nonlivetime=3600):
         """Method to create an instance of the notifier service object.
 
@@ -43,28 +43,36 @@ class ScoreNotifierService(object):
           team:        name of the team for which updates are required
           notifier:    object capable of acting as a notifier
           detailed:    (optional) request additional detail (not implemented)
-          debug:       does the user want debugging info?
+          logger:      logger object for debug logs
           livetime:    number of seconds before refresh when match in progress
           nonlivetime: number of seconds before refresh when no live match
 
         NB initialising the object does not begin the service. The "run"
         method must be called separately.
         """
-        self.debug = debug
-        self.__debugger("Starting service with team: {}".format(team))
+        self.__logger = logger
+        self.__can_log = self.__logger is not None
+        self.__debug("Starting service with team: {}".format(team))
         self.team = team
         self.detailed = detailed
         self.__notifier = notifier
         self.__livetime = livetime
         self.__nonlivetime = nonlivetime
-        if self.__notifier is None:
-            self.__debugger("No notifier available. Exiting...")
-            sys.exit(1)
 
-    def __debugger(self, message):
+    def __debug(self, message):
         """Method for handling debugging messages."""
-        if self.debug:
-            print message
+        if self.__can_log:
+            self.__logger.debug(message)
+
+    def __info(self, message):
+        """Method for handling info messages."""
+        if self.__can_log:
+            self.__logger.info(message)
+
+    def __error(self, message):
+        """Method for handling error messages."""
+        if self.__can_log:
+            self.__logger.error(message)
 
     def run(self):
         """Method to start the notification service.
@@ -82,19 +90,19 @@ class ScoreNotifierService(object):
 
             # If the script has found a football match then we need to process
             # it to see if we need any notifications
-            self.__debugger("Checking status...")
+            self.__debug("Checking status...")
             if self.match.MatchFound:
                 self.__checkStatus()
             else:
-                self.__debugger("No match found.")
+                self.__debug("No match found.")
 
             # Once we've processed the football match we need to sleep for a
             # while.
-            self.__debugger("Calculating sleep time...")
+            self.__debug("Calculating sleep time...")
             self.__sleep()
 
             # After that it's time to refresh the data
-            self.__debugger("Refreshing data...")
+            self.__debug("Refreshing data...")
             self.__update()
 
     def __sendUpdate(self, code):
@@ -104,7 +112,7 @@ class ScoreNotifierService(object):
 
           code:    prefix used to identify event type
         """
-        self.__debugger("Sending update: {}".format(code))
+        self.__debug("Sending update: {}".format(code))
         self.__notifier.Notify(code, self.match)
 
     def __checkStatus(self):
@@ -116,19 +124,19 @@ class ScoreNotifierService(object):
         # a notification that there is a game today. Subsequent notifications
         # will only be sent to the extent one of the conditions below matches.
         if self.match.NewMatch:
-            self.__debugger("Match found.")
+            self.__info("Match found.")
             self.__sendUpdate(CONST.STATUS_MATCH_FOUND)
 
         # Goooooooooooooooooaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaallll!
         elif self.match.Goal:
-            self.__debugger("Goal.")
+            self.__info("Goal.")
             code = (CONST.GOAL_MYTEAM if self.match.MyTeamGoal
                     else CONST.GOAL_OPPOSITION)
             self.__sendUpdate(code)
 
         # Status change e.g. start of match, half time, full time.
         elif self.match.StatusChanged:
-            self.__debugger("Status change.")
+            self.__info("Status change.")
             self.__sendUpdate(self.match.Status)
 
     def __sleep(self):
@@ -139,12 +147,12 @@ class ScoreNotifierService(object):
         # There's currently no football match found, so there's no need for an
         # update for a while.
         if not self.match.MatchFound:
-            self.__debugger("No match.")
+            self.__debug("No match.")
             delay = self.__nonlivetime
 
         # There is a football match, but it hasn't started yet.
         elif not self.match.HasStarted:
-            self.__debugger("Match hasn't started")
+            self.__debug("Match hasn't started")
 
             # Get kickoff time and then calculate number of seconds required
             # until approximately 5 minutes before kickoff (at which point it
@@ -157,22 +165,22 @@ class ScoreNotifierService(object):
 
         # Match is over so need for regular updates now.
         elif self.match.HasFinished:
-            self.__debugger("Match has finished")
+            self.__debug("Match has finished")
             delay = self.__nonlivetime
 
         # Match is live so we need regular updates
         elif self.match.IsLive:
-            self.__debugger("Match is in progress")
+            self.__debug("Match is in progress")
             delay = self.__livetime
 
         # I can't think of any reason for this to be triggered, but better to
         # have this here just in case!
         else:
-            self.__debugger("Not sure why we're here!")
+            self.__debug("Not sure why we're here!")
             delay = self.__nonlivetime
 
         # Time to sleep.
-        self.__debugger("Sleeping for {} seconds".format(delay))
+        self.__debug("Sleeping for {} seconds".format(delay))
         sleep(delay)
 
     def __update(self):

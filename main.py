@@ -18,6 +18,8 @@ Any errors can be discussed on the Raspberry Pi forum at this address:
 Version: 0.1
 """
 
+import logging
+
 from service.scoresservice import ScoreNotifierService
 from notifiers.notifier_autoremote import AutoRemoteNotifier
 from notifiers.notifier_email import EmailNotifier
@@ -42,9 +44,16 @@ NON_LIVE_UPDATE_TIME = 60 * 60
 # Should be updated to reflect the needs of the specific notifier
 DETAILED = True
 
-# DEBUG: Setting to True will output debug information. Should be kept as False
-#        unless there's a very good reason to change
-DEBUG = True
+# LOGFILE:
+LOGFILE = "/home/pi/service.log"
+
+# DEBUG_LEVEL: set the log level here
+# logging.DEBUG: Very verbose. Will provide updates about everything. Probably
+#                best left to developers
+# logging.INFO:  Reduced info. Just provides updates for errors and
+#                notification events
+# logging.ERROR: Just provide log info when an error is encountered.
+DEBUG_LEVEL = logging.ERROR
 
 ##############################################################################
 # NOTIFIERS - You should only initialise one notifier and comment out the    #
@@ -84,11 +93,39 @@ prefix = "scores"
 # DO NOT CHANGE ANYTHING BELOW THIS LINE                                     #
 ##############################################################################
 
+# Create a logger object for providing output.
+logger = logging.getLogger("ScoresService")
+logger.setLevel(DEBUG_LEVEL)
+
+# Tell the logger to use our filepath
+fh = logging.FileHandler(LOGFILE)
+
+# Set the format for our output
+formatter = logging.Formatter('%(asctime)s: '
+                              '%(levelname)s: %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
+logger.debug("Logger initialised.")
+
 if __name__ == "__main__":
-    service = ScoreNotifierService(myTeam,
-                                   notifier=notifier,
-                                   livetime=LIVE_UPDATE_TIME,
-                                   nonlivetime=NON_LIVE_UPDATE_TIME,
-                                   debug=DEBUG,
-                                   detailed=DETAILED)
-    service.run()
+
+    try:
+        logger.debug("Initialising service...")
+        service = ScoreNotifierService(myTeam,
+                                       notifier=notifier,
+                                       livetime=LIVE_UPDATE_TIME,
+                                       nonlivetime=NON_LIVE_UPDATE_TIME,
+                                       logger=logger,
+                                       detailed=DETAILED)
+        logger.debug("Starting service...")
+        service.run()
+
+    except KeyboardInterrupt:
+        logger.error("User exited with ctrl+C.")
+
+    except:
+        # We want to catch error messages
+        logger.exception("Exception encountered. See traceback message.\n"
+                         "Please help improve development by reporting"
+                         " errors.")
+        raise
