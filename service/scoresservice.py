@@ -8,6 +8,7 @@ checking of scores and sending updates to the relevant notifier.
 import sys
 from time import sleep
 import logging
+import socket
 
 from service.footballscores import FootballMatch
 import service.constants as CONST

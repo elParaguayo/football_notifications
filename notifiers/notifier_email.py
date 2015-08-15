@@ -141,6 +141,8 @@ class EmailNotifier(object):
         msg: MIMEMultipart object
         """
 
+        success = False
+
         try:
             self.__server = smtplib.SMTP(self.__serveraddr, self.__port)
             self.__server.starttls()
