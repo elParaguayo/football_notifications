@@ -6,6 +6,10 @@ This script is designed to be run as a headless service. The script periodically
 
 The script is designed to be customisable. Notifications are handled by "notifiers". The script currently has two available notifiers, email and AutoRemote. However, additional notifiers could be created e.g. if you had an LED strip attached to your RaspberryPi then you could have it flash whenever a goal was scored. A template notifier class is included with notes as to how it reacts to alerts from the service.
 
+*Dependencies*
+
+You will need to have the [requests](http://www.python-requests.org/en/latest/) module installed.
+
 *Installation*
 
 Sadly, I have no experience of writing installation scripts so there isn't one included here. That means that, currently, some effort is required from users.

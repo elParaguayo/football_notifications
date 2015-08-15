@@ -3,10 +3,7 @@
 
 by elParaguayo
 
-This script is (currently) designed to work in connjunction with AutoRemote
-and Tasker on an Android phone.
-
-The script checks football scores and sends updates to the phone where they
+The script checks football scores and sends updates to a notifier which
 can be handled by the user as they see fit (e.g. notifications for goals).
 
 An Issues/To Do list will be maintained separately on GitHub at this address:
