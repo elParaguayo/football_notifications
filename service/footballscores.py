@@ -22,6 +22,7 @@ from datetime import datetime, time
 import json
 import codecs
 import requests
+import socket
 
 __version__ = "0.3.0"
 
