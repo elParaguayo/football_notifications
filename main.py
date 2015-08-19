@@ -119,6 +119,7 @@ if __name__ == "__main__":
                                            level=DEBUG_LEVEL,
                                            detailed=DETAILED)
             logger.debug("Starting thread for {}".format(team))
+            service.daemon = True
             service.start()
 
     except KeyboardInterrupt:

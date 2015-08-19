@@ -87,6 +87,11 @@ class ScoreNotifierService(threading.Thread):
         if self.__can_log:
             self.__logger.error(message)
 
+    def __exception(self, message):
+        """Method for handling exception messages."""
+        if self.__can_log:
+            self.__logger.exception(message)
+
     def run(self):
         """Method to start the notification service.
 
@@ -99,24 +104,30 @@ class ScoreNotifierService(threading.Thread):
         self.match = FootballMatch(self.team, detailed=self.detailed)
 
         # Service starts here...
-        while True:
+        try:
+            while True:
 
-            # If the script has found a football match then we need to process
-            # it to see if we need any notifications
-            self.__debug("Checking status...")
-            if self.match.MatchFound:
-                self.__checkStatus()
-            else:
-                self.__debug("No match found.")
+                # If the script has found a football match then we need to
+                # process it to see if we need any notifications
+                self.__debug("Checking status...")
+                if self.match.MatchFound:
+                    self.__checkStatus()
+                else:
+                    self.__debug("No match found.")
 
-            # Once we've processed the football match we need to sleep for a
-            # while.
-            self.__debug("Calculating sleep time...")
-            self.__sleep()
+                # Once we've processed the football match we need to sleep for
+                # a while.
+                self.__debug("Calculating sleep time...")
+                self.__sleep()
 
-            # After that it's time to refresh the data
-            self.__debug("Refreshing data...")
-            self.__update()
+                # After that it's time to refresh the data
+                self.__debug("Refreshing data...")
+                self.__update()
+
+        except:
+            self.__exception("Exception encountered in thread.\n"
+                             "Please help improve the script by reporting.")
+            raise
 
     def __sendUpdate(self, code):
         """Method to send notifications via AutoRemote.

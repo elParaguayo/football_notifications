@@ -1,5 +1,6 @@
 # Prevent local settings from being uploaded
 TEST.py
+*.TEST
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
