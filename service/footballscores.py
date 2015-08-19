@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,7 +22,6 @@ from datetime import datetime, time
 import json
 import codecs
 import requests
-import socket
 
 __version__ = "0.3.0"
 
@@ -57,7 +57,7 @@ class matchcommon(object):
             return None
 
         if r.status_code == 200:
-            return r.content
+            return codecs.decode(r.content, "utf-8")
         else:
             return None
 
