@@ -18,6 +18,17 @@ PRE_FULL_TIME = "FULL TIME!"
 PRE_TEAM_GOAL = "GOOOOOOAAAAALLL!!!"
 PRE_OPPOSITION_GOAL = "Uh oh..."
 
+# This shouldn't be needed, but let's have it just in case.
+PRE_OTHER = "Unknown status"
+
+# Lookup to match events to the desred prefix.
+PREFIXES = {CONST.GOAL_MYTEAM: PRE_TEAM_GOAL,
+            CONST.GOAL_OPPOSITION: PRE_OPPOSITION_GOAL,
+            CONST.STATUS_MATCH_FOUND: PRE_NEW_MATHCH,
+            CONST.STATUS_KICK_OFF: PRE_KICK_OFF,
+            CONST.STATUS_HALF_TIME: PRE_HALF_TIME,
+            CONST.STATUS_FULL_TIME: PRE_FULL_TIME}
+
 MATCH_TEMPLATE = (
   u"""<body><html>
   <table width="100%">
@@ -110,26 +121,10 @@ class EmailNotifier(object):
 
         Suitable to be used as subject line for an email.
         """
-        score = ("{hometeam} {homescore}-{awayscore} "
+        score = (u"{hometeam} {homescore}-{awayscore} "
                  "{awayteam}".format(**matchobject.matchdict))
 
-        if event == CONST.STATUS_MATCH_FOUND:
-            prefix = PRE_NEW_MATHCH
-
-        elif event == CONST.STATUS_KICK_OFF:
-            prefix = PRE_KICK_OFF
-
-        elif event == CONST.STATUS_HALF_TIME:
-            prefix = PRE_HALF_TIME
-
-        elif event == CONST.STATUS_FULL_TIME:
-            prefix = PRE_FULL_TIME
-
-        elif event == CONST.GOAL_MYTEAM:
-            prefix = PRE_TEAM_GOAL
-
-        elif event == CONST.GOAL_OPPOSITION:
-            prefix = PRE_OPPOSITION_GOAL
+        prefix = PREFIXES.get(event, PRE_OTHER)
 
         return u"{title}{prefix} {score}".format(title=self.__title,
                                                  prefix=prefix,
