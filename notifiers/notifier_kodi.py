@@ -30,44 +30,59 @@ PREFIXES = {CONST.GOAL_MYTEAM: PRE_TEAM_GOAL,
 
 
 class KodiNotifier(object):
-    """Class object to handle sending messages to AutoRemote.
+    """Class object to handle sending messages to Kodi.
 
     Class should be initialised by passing the specific key for the device you
     wish to notify.
     """
 
-    def __init__(self, address, port, username=None, pwd=None,
-                 displaytime=5000):
+    def __init__(self, kodis, displaytime=5000):
         """Method to create an instance of the notifier.
 
-        Takes four parameters:
+        Takes two parameters:
 
-        address:     address of Kodi instance
-        port:        prefix used by AutoRemote to identify the message
-        username:    username to access Kodi
-        pwd:         password
-        displaytime: time in miliseconds to show notification
+        kodis:       List of kodi machines to notify. Each machine should be a
+                     dict as follows:
+
+                     address:  IP address of Kodi machine (e.g. "192.168.0.2"
+                               or "localhost")
+                     port:     Port that Kodi is listening on, usually 8080
+                     username: username if one set
+                     password: password if one set
+
+        displaytime: Amount of time (in milliseconds) to display notification
         """
-        self.base = "http://{address}:{port}/jsonrpc".format(address=address,
-                                                             port=port)
-        self.username = username
-        self.password = pwd
-        self.id = 0
+        self.base = "http://{address}:{port}/jsonrpc"
 
-    def __getPage(self, url, params):
+        # If user has passed a single dict then we need to put it in a list
+        if type(kodis) == dict:
+            self.kodis = [kodis]
+        else:
+            self.kodis = kodis
+
+        self.id = 0
+        self.displaytime = displaytime
+
+    def __getPage(self, kodi, params):
         """Boolean. Returns True if request sent successfully.
 
-        For AutoRemote we expect the response to be "OK"."""
+        For Kodi, we need to look for an OK message in the JSON response.
+        """
         headers = {'Content-Type': 'application/json'}
 
         # Use HTTP authentication from
         # http://forum.xbmc.org/showthread.php?tid=127759&pid=1346728#pid1346728
-        if self.password is not None and self.username is not None:
-            auth = '{{user}:{pwd}}'.format(user=self.username,
-                                           pwd=self.password)
+        username = kodi.get("username", None)
+        password = kodi.get("password", None)
+        if username and password:
+            auth = '{{user}:{pwd}}'.format(user=username,
+                                           pwd=password)
             base64string = base64.encodestring(auth)
             base64string = base64string.replace('\n', '')
             headers['Authorization'] = 'Basic %s' % (base64string)
+
+        url = self.base.format(address=kodi["address"],
+                               port=kodi.get("port", 8080))
 
         r = requests.post(url, data=json.dumps(params), headers=headers)
         result = json.loads(r.content)
@@ -77,22 +92,29 @@ class KodiNotifier(object):
     def __formatMessage(self, event, matchobject):
         """Method to create the notification to be sent to Kodi."""
         params = {"title": PREFIXES.get(event, PRE_OTHER),
-                  "message": str(matchobject)}
+                  "message": str(matchobject),
+                  "displaytime": self.displaytime}
 
         return params
 
     def Notify(self, event, matchobject, **kwargs):
-        """Method to send message via Autoremote.
+        """Method to send notifications to Kodi
 
-        Converts the match object into a string for sending to AutoRemote.
+        Converts the match object into a JSON RPC call and sends to each
+        Kodi instance.
 
         Returns True if message sent successfully.
         """
+        success = []
+
         params = {}
         params['jsonrpc'] = '2.0'
-        params['id'] = self.id
-        self.id += 1
         params['method'] = "GUI.ShowNotification"
         params['params'] = self.__formatMessage(event, matchobject)
 
-        return self.__getPage(self.base, params)
+        for kodi in self.kodis:
+            params['id'] = self.id
+            self.id += 1
+            success.append(self.__getPage(kodi, params))
+
+        return all(success)
