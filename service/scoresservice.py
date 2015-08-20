@@ -42,7 +42,7 @@ class ScoreNotifierService(object):
         Currently take six (four are optional) parameters:
 
           team:        name of the team for which updates are required
-          notifier:    object capable of acting as a notifier
+          notifiers:   list of objects capable of acting as a notifier
           detailed:    (optional) request additional detail (not implemented)
           logger:      logger object for debug logs
           livetime:    number of seconds before refresh when match in progress
@@ -56,7 +56,10 @@ class ScoreNotifierService(object):
         self.__debug("Starting service with team: {}".format(team))
         self.team = team
         self.detailed = detailed
-        self.__notifier = notifier
+        if type(notifiers) != list:
+            self.__notifiers = [notifiers]
+        else:
+            self.__notifiers = notifiers
         self.__livetime = livetime
         self.__nonlivetime = nonlivetime
 
@@ -114,7 +117,8 @@ class ScoreNotifierService(object):
           code:    prefix used to identify event type
         """
         self.__debug("Sending update: {}".format(code))
-        self.__notifier.Notify(code, self.match)
+        for notifier in self.__notifiers:
+            notifier.Notify(code, self.match)
 
     def __checkStatus(self):
         """Method to process a football match and send notifications where

@@ -109,7 +109,7 @@ if __name__ == "__main__":
     try:
         logger.debug("Initialising service...")
         service = ScoreNotifierService(myTeam,
-                                       notifier=notifier,
+                                       notifier=[notifier],
                                        livetime=LIVE_UPDATE_TIME,
                                        nonlivetime=NON_LIVE_UPDATE_TIME,
                                        logger=logger,
