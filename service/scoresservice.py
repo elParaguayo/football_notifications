@@ -212,3 +212,40 @@ class ScoreNotifierService(threading.Thread):
         """Method to refresh football match."""
 
         self.match.Update()
+
+class LeagueNotifierService(threading.Thread):
+    """Class object to check league scores and send updates via a specific
+    notifier.
+
+    Each instance of this class can only process one league.
+    """
+
+    def __init__(self, league, notifier=None, detailed=False, handler=None,
+                 livetime=60, nonlivetime=3600, level=logging.ERROR):
+        """Method to create an instance of the notifier service object.
+
+        Currently take six (four are optional) parameters:
+
+          team:        name of the team for which updates are required
+          notifier:    object capable of acting as a notifier
+          detailed:    (optional) request additional detail (not implemented)
+          handler:     handler object for debug logs
+          level:       debug level
+          livetime:    number of seconds before refresh when match in progress
+          nonlivetime: number of seconds before refresh when no live match
+
+        NB initialising the object does not begin the service. The "run"
+        method must be called separately.
+        """
+        threading.Thread.__init__(self)
+        self.__lock = threading.Lock()
+        self.league = league
+        self.__handler = handler
+        self.__level = level
+        self.__logger = self.__createLogger()
+        self.__can_log = self.__logger is not None
+        self.__debug("Starting service with league: {}".format(league))
+        self.detailed = detailed
+        self.__notifier = notifier
+        self.__livetime = livetime
+        self.__nonlivetime = nonlivetime

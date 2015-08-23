@@ -29,6 +29,9 @@ from notifiers.notifier_email import EmailNotifier
 # NB the team name needs to match the name used by the BBC
 myTeams = ["Chelsea", "Arsenal"]
 
+# myLeages: IDs of leagues for updates
+myLeagues = []
+
 # LIVE_UPDATE_TIME: Time in seconds until data refreshes while match is live
 # NON_LIVE_UPDATE_TIME: Time in seconds until data refreshes after match or
 #                       when there is no match on the day
@@ -121,6 +124,9 @@ if __name__ == "__main__":
             logger.debug("Starting thread for {}".format(team))
             service.daemon = True
             service.start()
+
+        for league in myLeagues:
+            pass
 
     except KeyboardInterrupt:
         logger.error("User exited with ctrl+C.")
