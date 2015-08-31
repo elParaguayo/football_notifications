@@ -10,6 +10,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import service.constants as CONST
+from notifiers.notifierbase import NotifierBase
+from notifiers.exceptions import InvalidNotifier
 
 PRE_NEW_MATHCH = "New match found."
 PRE_KICK_OFF = "KICK-OFF!"
@@ -18,28 +20,32 @@ PRE_FULL_TIME = "FULL TIME!"
 PRE_TEAM_GOAL = "GOOOOOOAAAAALLL!!!"
 PRE_OPPOSITION_GOAL = "Uh oh..."
 
-MATCH_TEMPLATE = (
+OUTER_TEMPLATE = (
   u"""<body><html>
-  <table width="100%">
-  <tbody>
-  <tr><td colspan="3" style="text-align: center;">{status}</td></tr>
-  <tr>
-  <td width="40%" style="text-align: center;">{hometeam}</td>
-  <td width="20%"style="text-align: center;">{homescore}-{awayscore}</td>
-  <td width="40%"style="text-align: center;">{awayteam}</td>
-  </tr>
-  <tr>
-  <td width="40%" style="text-align: center;">{hsc}</td>
-  <td width="20%"style="text-align: center;">{matchtime}</td>
-  <td width="40%"style="text-align: center;">{asc}</td>
-  </tr>
-  </tbody>
-  </table>
+  {body}
   </html></body>"""
 )
 
+MATCH_TEMPLATE = (
+  u"""  <table width="100%">
+    <tbody>
+    <tr><td colspan="3" style="text-align: center;">{status}</td></tr>
+    <tr>
+    <td width="40%" style="text-align: center;">{hometeam}</td>
+    <td width="20%"style="text-align: center;">{homescore}-{awayscore}</td>
+    <td width="40%"style="text-align: center;">{awayteam}</td>
+    </tr>
+    <tr>
+    <td width="40%" style="text-align: center;">{hsc}</td>
+    <td width="20%"style="text-align: center;">{matchtime}</td>
+    <td width="40%"style="text-align: center;">{asc}</td>
+    </tr>
+    </tbody>
+    </table>"""
+)
 
-class EmailNotifier(object):
+
+class EmailNotifier(NotifierBase):
     """Class object to handle sending messages via email.
 
     This is a generic class to handle sending via SMTP. It is included as a
@@ -64,6 +70,7 @@ class EmailNotifier(object):
         toaddrs:   list of recipients ["foo@bar.com", "bar@foo.com"]
         title:     optional prefix for email subject line
         """
+        NotifierBase.__init__(self)
         self.__serveraddr = server
         self.__port = port
         self.__username = username
@@ -71,16 +78,9 @@ class EmailNotifier(object):
         self.__fromaddr = fromaddr
         self.__toaddrs = toaddrs
         self.__title = "{title} ".format(title=title) if title else ""
+        self._modes += CONST.MODE_LEAGUE
 
-    def __formatMessage(self, event, matchobject):
-        """Method to create string to be sent via email."""
-        msg = MIMEMultipart('alternative')
-        msg.set_charset('utf8')
-
-        msg['Subject'] = self.__getSubject(event, matchobject)
-        msg['From'] = self.__fromaddr
-        msg['To'] = ", ".join(self.__toaddrs)
-
+    def __createMatchTable(self, matchobject):
         m = matchobject
         if type(m.HomeScorers) == list:
             hsc = m.formatIncidents(m.HomeScorers, newline=True)
@@ -93,9 +93,19 @@ class EmailNotifier(object):
             asc = asc.replace("\n", "<br />")
         else:
             asc = ""
+        table = MATCH_TEMPLATE.format(hsc=hsc, asc=asc, **m.matchdict)
+        return table
 
-        html = MATCH_TEMPLATE.format(hsc=hsc, asc=asc, **m.matchdict)
-        plain = unicode(m)
+    def __createMessage(self, body, plain, subject):
+        """Method to create string to be sent via email."""
+        msg = MIMEMultipart('alternative')
+        msg.set_charset('utf8')
+
+        msg['Subject'] = subject
+        msg['From'] = self.__fromaddr
+        msg['To'] = ", ".join(self.__toaddrs)
+
+        html = OUTER_TEMPLATE.format(body=body)
 
         plainpart = MIMEText(plain.encode('utf-8'), "plain", _charset='utf-8')
         htmlpart = MIMEText(html.encode('utf-8'), "html", _charset='utf-8')
@@ -105,12 +115,33 @@ class EmailNotifier(object):
 
         return msg
 
+    def __formatMatch(self, event, matchobject):
+        """Method to create string to be sent via email."""
+        body = self.__createMatchTable(matchobject)
+        plain = unicode(m)
+        subject = self.__getSubject(event, matchobject)
+
+        return self.__createMessage(body, plain, subject)
+
+    def __formatLeague(self, event, leagueobject):
+        bodylist = []
+        plainlist = []
+
+        for m in leagueobject.LeagueMatches:
+            bodylist.append(self.__createMatchTable(m))
+            plainlist.append(unicode(m))
+
+        body = "<br />".join(bodylist)
+        plain = "\n".join(plainlist)
+
+        return self.__createMessage(body, plain, leagueobject.LeagueName)
+
     def __getSubject(self, event, matchobject):
         """Provides a concise summary of the reason for the notification.
 
         Suitable to be used as subject line for an email.
         """
-        score = ("{hometeam} {homescore}-{awayscore} "
+        score = (u"{hometeam} {homescore}-{awayscore} "
                  "{awayteam}".format(**matchobject.matchdict))
 
         if event == CONST.STATUS_MATCH_FOUND:
@@ -158,9 +189,20 @@ class EmailNotifier(object):
             self.__server.quit()
             return success
 
-    def Notify(self, event, matchobject, *kwargs):
+    def Notify(self, event, matchobject, **kwargs):
         """Method to send message via email.
 
         Returns True if message sent successfully.
         """
-        return self.__sendMail(self.__formatMessage(event, matchobject))
+        mode = kwargs.get("mode", CONST.MODE_MATCH)
+        result = False
+
+        if mode == CONST.MODE_MATCH:
+            msg = self.__formatMatch(event, matchobject)
+        elif mode == CONST.MODE_LEAGUE:
+            msg = self.__formatLeague(event, matchobject)
+
+        if msg:
+            result = self.__sendMail(msg)
+
+        return result

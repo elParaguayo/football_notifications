@@ -18,6 +18,7 @@ Version: 0.1
 import logging
 
 from service.scoresservice import ScoreNotifierService
+from service.leagueservice import LeagueNotifierService
 from notifiers.notifier_autoremote import AutoRemoteNotifier
 from notifiers.notifier_email import EmailNotifier
 
@@ -30,7 +31,7 @@ from notifiers.notifier_email import EmailNotifier
 myTeams = ["Chelsea", "Arsenal"]
 
 # myLeages: IDs of leagues for updates
-myLeagues = []
+myLeagues = ["118996114", "119001074"]
 
 # LIVE_UPDATE_TIME: Time in seconds until data refreshes while match is live
 # NON_LIVE_UPDATE_TIME: Time in seconds until data refreshes after match or
@@ -126,7 +127,14 @@ if __name__ == "__main__":
             service.start()
 
         for league in myLeagues:
-            pass
+            service = LeagueNotifierService(league,
+                                            notifier=notifier,
+                                            livetime=LIVE_UPDATE_TIME,
+                                            nonlivetime=NON_LIVE_UPDATE_TIME,
+                                            handler=fh,
+                                            level=DEBUG_LEVEL,
+                                            detailed=DETAILED)
+            service.start()
 
     except KeyboardInterrupt:
         logger.error("User exited with ctrl+C.")

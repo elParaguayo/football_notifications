@@ -8,13 +8,15 @@ checking of scores and sending updates to the relevant notifier.
 import sys
 from time import sleep
 import logging
+import socket
+import threading
 
-from service.footballscores import FootballMatch
+from service.footballscores import League
 from service.servicebase import ServiceBase
 import service.constants as CONST
 
 
-class ScoreNotifierService(ServiceBase):
+class LeagueNotifierService(ServiceBase):
     """Class object to check football scores and send updates via AutoRemote.
 
     Each instance of this class can only process one team.
@@ -35,7 +37,7 @@ class ScoreNotifierService(ServiceBase):
     updates.
     """
 
-    def __init__(self, team, notifier=None, detailed=False, handler=None,
+    def __init__(self, league, notifier=None, detailed=False, handler=None,
                  livetime=60, nonlivetime=3600, level=logging.ERROR):
         """Method to create an instance of the notifier service object.
 
@@ -57,12 +59,12 @@ class ScoreNotifierService(ServiceBase):
         ServiceBase.__init__(self, notifier=notifier, detailed=detailed,
                              handler=handler, livetime=livetime,
                              nonlivetime=nonlivetime, level=level,
-                             loggerid=team)
+                             loggerid=league)
 
         # Now we can do some stuff that's purely relevant for the football
         # match score service.
-        self.team = team
-        self._debug("Starting service with team: {}".format(team))
+        self.leagueid = league
+        self._debug("Starting service with league: {}".format(self.leagueid))
         self.detailed = detailed
 
     def run(self):
@@ -73,20 +75,22 @@ class ScoreNotifierService(ServiceBase):
         try... except... block as appropriate.
         """
 
-        # Create an instance of the Football Match
-        self.match = FootballMatch(self.team, detailed=self.detailed)
+        # Create an instance of the League
+        self.league = League(self.leagueid, detailed=self.detailed)
 
         # Service starts here...
         try:
+            self._notifier.checkMode(CONST.MODE_LEAGUE)
+
             while True:
 
-                # If the script has found a football match then we need to
+                # If the script has found any matches then we need to
                 # process it to see if we need any notifications
                 self._debug("Checking status...")
-                if self.match.MatchFound:
+                if self.league.LeagueMatches:
                     self._checkStatus()
                 else:
-                    self._debug("No match found.")
+                    self._debug("No matches found.")
 
                 # Once we've processed the football match we need to sleep for
                 # a while.
@@ -111,7 +115,7 @@ class ScoreNotifierService(ServiceBase):
         """
         with self._lock:
             self._debug("Sending update: {}".format(code))
-            self._notifier.Notify(code, self.match)
+            self._notifier.Notify(code, self.league, mode=CONST.MODE_LEAGUE)
 
     def _checkStatus(self):
         """Method to process a football match and send notifications where
@@ -121,21 +125,21 @@ class ScoreNotifierService(ServiceBase):
         # New football match found. Only triggers once per match so user gets
         # a notification that there is a game today. Subsequent notifications
         # will only be sent to the extent one of the conditions below matches.
-        if self.match.NewMatch:
+        if self.league.NewMatch:
             self._info("Match found.")
             self._sendUpdate(CONST.STATUS_MATCH_FOUND)
 
         # Goooooooooooooooooaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaallll!
-        elif self.match.Goal:
+        elif self.league.Goal:
             self._info("Goal.")
-            code = (CONST.GOAL_MYTEAM if self.match.MyTeamGoal
-                    else CONST.GOAL_OPPOSITION)
+            code = CONST.LEAGUE_GOAL
             self._sendUpdate(code)
 
         # Status change e.g. start of match, half time, full time.
-        elif self.match.StatusChanged:
+        elif self.league.StatusChanged:
             self._info("Status change.")
-            self._sendUpdate(self.match.Status)
+            code = CONST.LEAGUE_STATUS_CHANGE
+            self._sendUpdate(code)
 
     def _sleep(self):
         """Method to calculate required sleep time depending on status of
@@ -144,31 +148,32 @@ class ScoreNotifierService(ServiceBase):
 
         # There's currently no football match found, so there's no need for an
         # update for a while.
-        if not self.match.MatchFound:
+        if not self.league.LeagueMatches:
             self._debug("No match.")
             delay = self._nonlivetime
 
         # There is a football match, but it hasn't started yet.
-        elif not self.match.HasStarted:
-            self._debug("Match hasn't started")
+        elif not self.league.HasStarted:
+            self._debug("League hasn't started")
 
             # Get kickoff time and then calculate number of seconds required
             # until approximately 5 minutes before kickoff (at which point it
             # switches to regular updates)
-            kickoff = self.match.TimeToKickOff.total_seconds()
+            kickoff = min((m.TimeToKickOff.total_seconds()
+                           for m in self.league.LeagueMatches))
             if kickoff < 300:
                 delay = self._livetime
             else:
                 delay = kickoff - 240
 
         # Match is over so need for regular updates now.
-        elif self.match.HasFinished:
-            self._debug("Match has finished")
+        elif self.league.HasFinished:
+            self._debug("League has finished")
             delay = self._nonlivetime
 
         # Match is live so we need regular updates
-        elif self.match.IsLive:
-            self._debug("Match is in progress")
+        elif self.league.IsLive:
+            self._debug("League is in progress")
             delay = self._livetime
 
         # I can't think of any reason for this to be triggered, but better to
@@ -184,4 +189,4 @@ class ScoreNotifierService(ServiceBase):
     def _update(self):
         """Method to refresh football match."""
 
-        self.match.Update()
+        self.league.Update()

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -57,7 +58,7 @@ class matchcommon(object):
             return None
 
         if r.status_code == 200:
-            return r.content
+            return codecs.decode(r.content, "utf-8")
         else:
             return None
 
@@ -1055,6 +1056,10 @@ class League(matchcommon):
     @property
     def LeagueID(self):
         return self.__leagueid
+
+    @property
+    def NewMatch(self):
+        return any((m.NewMatch for m in self.__leaguematches))
 
     @property
     def Goal(self):
