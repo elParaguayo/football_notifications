@@ -30,6 +30,7 @@ var/
 
 *.PRIVATE
 copy_footballscores.sh
+*.TEST
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
