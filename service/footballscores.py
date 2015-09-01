@@ -1058,6 +1058,10 @@ class League(matchcommon):
         return self.__leagueid
 
     @property
+    def NewMatch(self):
+        return any((m.NewMatch for m in self.__leaguematches))
+
+    @property
     def Goal(self):
         return any((m.Goal for m in self.__leaguematches))
 

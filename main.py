@@ -18,6 +18,7 @@ Version: 0.1
 import logging
 
 from service.scoresservice import ScoreNotifierService
+from service.leagueservice import LeagueNotifierService
 from notifiers.notifier_autoremote import AutoRemoteNotifier
 from notifiers.notifier_email import EmailNotifier
 
@@ -25,9 +26,12 @@ from notifiers.notifier_email import EmailNotifier
 # USER SETTINGS - CHANGE AS APPROPRIATE                                      #
 ##############################################################################
 
-# myTeam: Name of the team for which you want to receive updates.
+# myTeams: list of the teams for which you want to receive updates.
 # NB the team name needs to match the name used by the BBC
-myTeam = "Chelsea"
+myTeams = ["Chelsea", "Arsenal"]
+
+# myLeages: IDs of leagues for updates
+myLeagues = ["118996114", "119001074"]
 
 # LIVE_UPDATE_TIME: Time in seconds until data refreshes while match is live
 # NON_LIVE_UPDATE_TIME: Time in seconds until data refreshes after match or
@@ -96,10 +100,12 @@ logger.setLevel(DEBUG_LEVEL)
 
 # Tell the logger to use our filepath
 fh = logging.FileHandler(LOGFILE)
+fh.setLevel(DEBUG_LEVEL)
 
 # Set the format for our output
 formatter = logging.Formatter('%(asctime)s: '
-                              '%(levelname)s: %(message)s')
+                              '%(levelname)s: %(message)s',
+                              datefmt="%d/%m/%y %H:%M:%S")
 fh.setFormatter(formatter)
 logger.addHandler(fh)
 logger.debug("Logger initialised.")
@@ -107,15 +113,31 @@ logger.debug("Logger initialised.")
 if __name__ == "__main__":
 
     try:
-        logger.debug("Initialising service...")
-        service = ScoreNotifierService(myTeam,
-                                       notifier=notifier,
-                                       livetime=LIVE_UPDATE_TIME,
-                                       nonlivetime=NON_LIVE_UPDATE_TIME,
-                                       logger=logger,
-                                       detailed=DETAILED)
-        logger.debug("Starting service...")
-        service.run()
+        logger.debug("Initialising services...")
+
+        for team in myTeams:
+            service = ScoreNotifierService(team,
+                                           notifier=notifier,
+                                           livetime=LIVE_UPDATE_TIME,
+                                           nonlivetime=NON_LIVE_UPDATE_TIME,
+                                           handler=fh,
+                                           level=DEBUG_LEVEL,
+                                           detailed=DETAILED)
+            logger.debug("Starting thread for {}".format(team))
+            service.daemon = True
+            service.start()
+
+        for league in myLeagues:
+            service = LeagueNotifierService(league,
+                                            notifier=notifier,
+                                            livetime=LIVE_UPDATE_TIME,
+                                            nonlivetime=NON_LIVE_UPDATE_TIME,
+                                            handler=fh,
+                                            level=DEBUG_LEVEL,
+                                            detailed=DETAILED)
+            logger.debug("Starting thread for league id {}".format(league))
+            service.daemon = True
+            service.start()
 
     except KeyboardInterrupt:
         logger.error("User exited with ctrl+C.")

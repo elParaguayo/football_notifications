@@ -4,6 +4,9 @@ The object is designed to be used as a basis for custom notifier classes.
 
 """
 
+# Import the base notifier class
+from notifers.notifierbase import NotifierBase
+
 # This imports the event types used by the service and ensures consistency
 # across notifiers.
 import service.constants as CONST
@@ -18,17 +21,21 @@ import service.constants as CONST
 # CONST.STATUS_FULL_TIME - called at full time
 
 
-class TemplateNotifier(object):
+class TemplateNotifier(NotifierBase):
     """Description of notifier goes here."""
 
     def __init__(self, **kwargs):
         """Method to create an instance of the notifier.
 
         NB The notifier will be initialised before the service starts.
-        """
-        pass
 
-    def Notify(self, event, matchobject, **kwargs):
+        If your notifier is designed to handle other modes then these should
+        be ADDED to self_modes e.g.
+            self._modes += CONST.MODE_LEAGUE
+        """
+        NotifierBase.__init__(self)
+
+    def Notify(self, event, matchobject, mode=CONST.MODE_MATCH, **kwargs):
         """This is the method that will be called by the service when an
         event is triggered. As such the name and parameters cannot be changed.
 
@@ -36,6 +43,7 @@ class TemplateNotifier(object):
         matchobject: FootballMatch object. There is a lot of information
                      available. Have a look at the service.footballscores.py
                      source for details.
+        mode:        Variable to select relevant mode
         kwargs:      Other keyword arguments (for future compatibility)
 
         Should return True if event notification was successful.
