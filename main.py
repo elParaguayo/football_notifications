@@ -113,7 +113,8 @@ logger.debug("Logger initialised.")
 if __name__ == "__main__":
 
     try:
-        logger.debug("Initialising service...")
+        logger.debug("Initialising services...")
+
         for team in myTeams:
             service = ScoreNotifierService(team,
                                            notifier=notifier,
@@ -134,6 +135,8 @@ if __name__ == "__main__":
                                             handler=fh,
                                             level=DEBUG_LEVEL,
                                             detailed=DETAILED)
+            logger.debug("Starting thread for league id {}".format(league))
+            service.daemon = True
             service.start()
 
     except KeyboardInterrupt:
