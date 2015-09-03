@@ -102,7 +102,7 @@ class ScoreNotifierService(ServiceBase):
             raise
 
     def _sendUpdate(self, code):
-        """Method to send notifications via AutoRemote.
+        """Method to send notifications.
 
         Needs one parameter:
 
@@ -111,7 +111,9 @@ class ScoreNotifierService(ServiceBase):
         with self._lock:
             self._debug("Sending update: {}".format(code))
             for notifier in self._notifiers:
-                notifier.Notify(code, self.match)
+                r = notifier.Notify(code, self.match)
+                self._debug(r)
+                self.checkNotification(r, notifier)
 
     def _checkStatus(self):
         """Method to process a football match and send notifications where

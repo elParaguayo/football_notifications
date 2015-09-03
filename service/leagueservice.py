@@ -59,7 +59,7 @@ class LeagueNotifierService(ServiceBase):
         ServiceBase.__init__(self, notifiers=notifiers, detailed=detailed,
                              handler=handler, livetime=livetime,
                              nonlivetime=nonlivetime, level=level,
-                             loggerid=league)
+                             loggerid=league, servicemode=CONST.MODE_LEAGUE)
 
         # Now we can do some stuff that's purely relevant for the football
         # match score service.
@@ -106,7 +106,7 @@ class LeagueNotifierService(ServiceBase):
             raise
 
     def _sendUpdate(self, code):
-        """Method to send notifications via AutoRemote.
+        """Method to send notifications.
 
         Needs one parameter:
 
@@ -115,7 +115,8 @@ class LeagueNotifierService(ServiceBase):
         with self._lock:
             self._debug("Sending update: {}".format(code))
             for notifier in self._notifiers:
-                notifier.Notify(code, self.league, mode=CONST.MODE_LEAGUE)
+                r = notifier.Notify(code, self.league, mode=self.servicemode)
+                self.checkNotification(r)
 
     def _checkStatus(self):
         """Method to process a football match and send notifications where

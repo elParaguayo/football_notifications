@@ -2,16 +2,17 @@ import threading
 import logging
 
 from notifiers.exceptions import InvalidNotifier
+import service.constants as CONST
 
 
 class ServiceBase(threading.Thread):
 
     def __init__(self, notifiers=None, detailed=False, handler=None,
                  livetime=60, nonlivetime=3600, level=logging.ERROR,
-                 loggerid=None):
+                 loggerid=None, servicemode=CONST.MODE_MATCH):
         """Method to create an instance of the base service object.
 
-        Currently take six (four are optional) parameters:
+        Currently take seven (five are optional) parameters:
 
           team:        name of the team for which updates are required
           notifiers:   object capable of acting as a notifier
@@ -20,6 +21,7 @@ class ServiceBase(threading.Thread):
           level:       debug level
           livetime:    number of seconds before refresh when match in progress
           nonlivetime: number of seconds before refresh when no live match
+          servicemode: mode for notifications
 
         NB initialising the object does not begin the service. The "run"
         method must be called separately.
@@ -33,11 +35,12 @@ class ServiceBase(threading.Thread):
         self._can_log = self._logger is not None
         self.detailed = detailed
         if type(notifiers) != list:
-            self.__notifiers = [notifiers]
+            self._notifiers = [notifiers]
         else:
-            self.__notifiers = notifiers
+            self._notifiers = notifiers
         self._livetime = livetime
         self._nonlivetime = nonlivetime
+        self._servicemode = servicemode
 
     def _createLogger(self):
         logger = logging.getLogger("Worker({})".format(self._loggerid))
@@ -70,3 +73,11 @@ class ServiceBase(threading.Thread):
         raise InvalidNotifier("The selected notifier is incompatible "
                               "with the requested mode "
                               "({mode}).".format(mode=mode))
+
+    def checkNotification(self, code, notifier):
+        if code:
+            self._debug("{} notification "
+                        "successfully sent.".format(str(notifier)))
+        else:
+            self._info("Error sending notification with notifier: "
+                       "{}".format(str(notifier)))

@@ -129,7 +129,7 @@ class EmailNotifier(NotifierBase):
     def __formatMatch(self, event, matchobject):
         """Method to create string to be sent via email."""
         body = self.__createMatchTable(matchobject)
-        plain = unicode(m)
+        plain = unicode(matchobject)
         subject = self.__getSubject(event, matchobject)
 
         return self.__createMessage(body, plain, subject)
