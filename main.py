@@ -15,19 +15,29 @@ https://www.raspberrypi.org/forums/viewtopic.php?f=41&t=118203
 Version: 0.1
 """
 
+# Logging module is needed for setting logging level
 import logging
 
-from service.scoresservice import ScoreNotifierService
+# Import notifier classes here
 from notifiers.notifier_autoremote import AutoRemoteNotifier
 from notifiers.notifier_email import EmailNotifier
+
+# This is the class that pulls everything together and keeps the main script
+# nice and clean.
+from service.footballnotify import FootballNotify
 
 ##############################################################################
 # USER SETTINGS - CHANGE AS APPROPRIATE                                      #
 ##############################################################################
 
-# myTeam: Name of the team for which you want to receive updates.
+# myTeams: list of the teams for which you want to receive updates.
 # NB the team name needs to match the name used by the BBC
-myTeam = "Chelsea"
+# See "teams.txt" for names of available teams
+myTeams = ["Chelsea", "Arsenal"]
+
+# myLeages: IDs of leagues for updates
+# See "leagues.txt" for names of available teams
+myLeagues = ["118996114", "119001074"]
 
 # LIVE_UPDATE_TIME: Time in seconds until data refreshes while match is live
 # NON_LIVE_UPDATE_TIME: Time in seconds until data refreshes after match or
@@ -74,7 +84,7 @@ PORT = 587
 # TITLE - optional prefix for email subject line
 TITLE = ""
 
-notifier = EmailNotifier(SERVER, PORT, USER, PWD, FROMADDR, TOADDR, TITLE)
+ntf_email = EmailNotifier(SERVER, PORT, USER, PWD, FROMADDR, TOADDR, TITLE)
 
 # AUTOREMOTE #################################################################
 
@@ -84,45 +94,24 @@ myAutoRemoteKey = ""
 # prefix - single word used by AutoRemote/Tasker to identify notifications
 prefix = "scores"
 
-# notifier = AutoRemoteNotifier(myAutoRemoteKey, prefix)
+# ntf_autoremote = AutoRemoteNotifier(myAutoRemoteKey, prefix)
+
+# NOTIFIERS ##################################################################
+# notifiers = list of notifier instances
+notifiers = [ntf_email]
 
 ##############################################################################
 # DO NOT CHANGE ANYTHING BELOW THIS LINE                                     #
 ##############################################################################
 
-# Create a logger object for providing output.
-logger = logging.getLogger("ScoresService")
-logger.setLevel(DEBUG_LEVEL)
-
-# Tell the logger to use our filepath
-fh = logging.FileHandler(LOGFILE)
-
-# Set the format for our output
-formatter = logging.Formatter('%(asctime)s: '
-                              '%(levelname)s: %(message)s')
-fh.setFormatter(formatter)
-logger.addHandler(fh)
-logger.debug("Logger initialised.")
-
 if __name__ == "__main__":
+    fn = FootballNotify(teams=myTeams,
+                        leagues=myLeagues,
+                        notifiers=notifiers,
+                        livetime=LIVE_UPDATE_TIME,
+                        nonlivetime=NON_LIVE_UPDATE_TIME,
+                        level=DEBUG_LEVEL,
+                        detailed=DETAILED,
+                        logpath=LOGFILE)
 
-    try:
-        logger.debug("Initialising service...")
-        service = ScoreNotifierService(myTeam,
-                                       notifier=[notifier],
-                                       livetime=LIVE_UPDATE_TIME,
-                                       nonlivetime=NON_LIVE_UPDATE_TIME,
-                                       logger=logger,
-                                       detailed=DETAILED)
-        logger.debug("Starting service...")
-        service.run()
-
-    except KeyboardInterrupt:
-        logger.error("User exited with ctrl+C.")
-
-    except:
-        # We want to catch error messages
-        logger.exception("Exception encountered. See traceback message.\n"
-                         "Please help improve development by reporting"
-                         " errors.")
-        raise
+    fn.run()
