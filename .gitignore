@@ -1,6 +1,8 @@
 # Prevent local settings from being uploaded
 TEST.py
 *.TEST
+footballdb.json
+create_txt.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

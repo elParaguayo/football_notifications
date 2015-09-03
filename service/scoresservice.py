@@ -35,14 +35,14 @@ class ScoreNotifierService(ServiceBase):
     updates.
     """
 
-    def __init__(self, team, notifier=None, detailed=False, handler=None,
+    def __init__(self, team, notifiers=None, detailed=False, handler=None,
                  livetime=60, nonlivetime=3600, level=logging.ERROR):
         """Method to create an instance of the notifier service object.
 
         Currently take six (four are optional) parameters:
 
           team:        name of the team for which updates are required
-          notifier:    object capable of acting as a notifier
+          notifiers:   list of objects capable of acting as a notifier
           detailed:    (optional) request additional detail (not implemented)
           handler:     handler object for debug logs
           level:       debug level
@@ -54,7 +54,7 @@ class ScoreNotifierService(ServiceBase):
         """
         # Most of the set up is handled by the ServiceBase class so let's
         # initialise that first.
-        ServiceBase.__init__(self, notifier=notifier, detailed=detailed,
+        ServiceBase.__init__(self, notifiers=notifiers, detailed=detailed,
                              handler=handler, livetime=livetime,
                              nonlivetime=nonlivetime, level=level,
                              loggerid=team)
@@ -63,7 +63,6 @@ class ScoreNotifierService(ServiceBase):
         # match score service.
         self.team = team
         self._debug("Starting service with team: {}".format(team))
-        self.detailed = detailed
 
     def run(self):
         """Method to start the notification service.
@@ -111,7 +110,8 @@ class ScoreNotifierService(ServiceBase):
         """
         with self._lock:
             self._debug("Sending update: {}".format(code))
-            self._notifier.Notify(code, self.match)
+            for notifier in self._notifiers:
+                notifier.Notify(code, self.match)
 
     def _checkStatus(self):
         """Method to process a football match and send notifications where

@@ -1,10 +1,12 @@
 import threading
 import logging
 
+from notifiers.exceptions import InvalidNotifier
+
 
 class ServiceBase(threading.Thread):
 
-    def __init__(self, notifier=None, detailed=False, handler=None,
+    def __init__(self, notifiers=None, detailed=False, handler=None,
                  livetime=60, nonlivetime=3600, level=logging.ERROR,
                  loggerid=None):
         """Method to create an instance of the base service object.
@@ -12,7 +14,7 @@ class ServiceBase(threading.Thread):
         Currently take six (four are optional) parameters:
 
           team:        name of the team for which updates are required
-          notifier:    object capable of acting as a notifier
+          notifiers:   object capable of acting as a notifier
           detailed:    (optional) request additional detail (not implemented)
           handler:     handler object for debug logs
           level:       debug level
@@ -30,7 +32,10 @@ class ServiceBase(threading.Thread):
         self._logger = self._createLogger()
         self._can_log = self._logger is not None
         self.detailed = detailed
-        self._notifier = notifier
+        if type(notifiers) != list:
+            self.__notifiers = [notifiers]
+        else:
+            self.__notifiers = notifiers
         self._livetime = livetime
         self._nonlivetime = nonlivetime
 
@@ -38,6 +43,7 @@ class ServiceBase(threading.Thread):
         logger = logging.getLogger("Worker({})".format(self._loggerid))
         logger.setLevel(self._level)
         logger.addHandler(self._handler)
+        logger.debug("CREATED WORKER {}".format(self._loggerid))
         return logger
 
     def _debug(self, message):
@@ -59,3 +65,8 @@ class ServiceBase(threading.Thread):
         """Method for handling exception messages."""
         if self._can_log:
             self._logger.exception(message)
+
+    def Invalid(self, mode):
+        raise InvalidNotifier("The selected notifier is incompatible "
+                              "with the requested mode "
+                              "({mode}).".format(mode=mode))
